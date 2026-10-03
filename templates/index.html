@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OCR + GPT</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <h1>OCR → GPT pipeline (v1)</h1>
+
+  <form id="form">
+    <label>Image or PDF <input type="file" name="image" accept="image/*,application/pdf" required></label>
+    <label>Instruction for GPT
+      <textarea name="prompt" rows="3">{{ default_prompt }}</textarea>
+    </label>
+    <button type="submit">Run</button>
+    <span id="status"></span>
+  </form>
+
+  <h2>1. PaddleOCR output</h2>
+  <pre id="ocr"></pre>
+
+  <h2>2. GPT output</h2>
+  <pre id="llm"></pre>
+
+  <script>
+    const form = document.getElementById("form");
+    const status = document.getElementById("status");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      status.textContent = "Processing...";
+      document.getElementById("ocr").textContent = "";
+      document.getElementById("llm").textContent = "";
+      try {
+        const res = await fetch("/process", { method: "POST", body: new FormData(form) });
+        const data = await res.json();
+        document.getElementById("ocr").textContent = data.ocr_text || "";
+        document.getElementById("llm").textContent = data.llm_output || "";
+        status.textContent = data.error || "Done";
+      } catch (err) {
+        status.textContent = "Request failed: " + err;
+      }
+    });
+  </script>
+</body>
+</html>
