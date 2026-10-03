@@ -2,4 +2,9 @@ body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; 
 form { display: flex; flex-direction: column; gap: .75rem; }
 textarea { width: 100%; }
 button { width: 120px; padding: .5rem; }
-pre { background: #f4f4f4; padding: 1rem; white-space: pre-wrap; min-height: 3rem; }
+pre { background: #f4f4f4; padding: 1rem; white-space: pre; overflow-x: auto; min-height: 3rem; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { border: 1px solid #ccc; padding: .4rem .6rem; text-align: left; }
+th { background: #f4f4f4; }
+.num { text-align: right; white-space: nowrap; }

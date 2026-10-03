@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,39 +7,67 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-  <h1>OCR → GPT pipeline (v1)</h1>
+  <h1>OCR → GPT pipeline</h1>
 
   <form id="form">
-    <label>Image or PDF <input type="file" name="image" accept="image/*,application/pdf" required></label>
-    <label>Instruction for GPT
-      <textarea name="prompt" rows="3">{{ default_prompt }}</textarea>
-    </label>
-    <button type="submit">Run</button>
+    <label>Image ou PDF <input type="file" name="image" accept="image/*,application/pdf" required></label>
+    <button type="submit">Lancer</button>
     <span id="status"></span>
   </form>
 
-  <h2>1. PaddleOCR output</h2>
-  <pre id="ocr"></pre>
+  <h2>Opérations extraites</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Date opération</th>
+          <th>Nature de l'opération</th>
+          <th class="num">Montant Débit</th>
+          <th class="num">Montant Crédit</th>
+        </tr>
+      </thead>
+      <tbody id="ops"></tbody>
+    </table>
+  </div>
 
-  <h2>2. GPT output</h2>
-  <pre id="llm"></pre>
+  <h2>Texte brut PaddleOCR</h2>
+  <pre id="ocr"></pre>
 
   <script>
     const form = document.getElementById("form");
     const status = document.getElementById("status");
+    const ops = document.getElementById("ops");
+
+    function renderOperations(operations) {
+      ops.replaceChildren();
+      for (const op of operations) {
+        const tr = ops.insertRow();
+        for (const [value, cls] of [
+          [op.date_operation, ""],
+          [op.nature_operation, ""],
+          [op.montant_debit, "num"],
+          [op.montant_credit, "num"],
+        ]) {
+          const td = tr.insertCell();
+          td.className = cls;
+          td.textContent = value ?? "";
+        }
+      }
+    }
+
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      status.textContent = "Processing...";
+      status.textContent = "Traitement en cours...";
       document.getElementById("ocr").textContent = "";
-      document.getElementById("llm").textContent = "";
+      ops.replaceChildren();
       try {
         const res = await fetch("/process", { method: "POST", body: new FormData(form) });
         const data = await res.json();
         document.getElementById("ocr").textContent = data.ocr_text || "";
-        document.getElementById("llm").textContent = data.llm_output || "";
-        status.textContent = data.error || "Done";
+        renderOperations(data.operations || []);
+        status.textContent = data.error || `Terminé — ${(data.operations || []).length} opération(s)`;
       } catch (err) {
-        status.textContent = "Request failed: " + err;
+        status.textContent = "Échec de la requête : " + err;
       }
     });
   </script>
