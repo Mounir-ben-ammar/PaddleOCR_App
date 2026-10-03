@@ -29,17 +29,24 @@
     const status = document.getElementById("status");
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      status.textContent = "Processing...";
+      status.textContent = "Processing... (a PDF can take a minute or two)";
       document.getElementById("ocr").textContent = "";
       document.getElementById("llm").textContent = "";
+      const button = form.querySelector("button");
+      button.disabled = true;
       try {
         const res = await fetch("/process", { method: "POST", body: new FormData(form) });
-        const data = await res.json();
+        const raw = await res.text();
+        let data;
+        try { data = JSON.parse(raw); }
+        catch { data = { error: `Server returned HTTP ${res.status}` }; }
         document.getElementById("ocr").textContent = data.ocr_text || "";
         document.getElementById("llm").textContent = data.llm_output || "";
         status.textContent = data.error || "Done";
       } catch (err) {
-        status.textContent = "Request failed: " + err;
+        status.textContent = "Cannot reach the server (" + err.message + "). Is python app.py still running?";
+      } finally {
+        button.disabled = false;
       }
     });
   </script>

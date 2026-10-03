@@ -2,3 +2,5 @@
 uploads/
 __pycache__/
 .venv/
+app.log
+app.err.log

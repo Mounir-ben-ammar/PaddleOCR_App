@@ -2,4 +2,4 @@ body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; 
 form { display: flex; flex-direction: column; gap: .75rem; }
 textarea { width: 100%; }
 button { width: 120px; padding: .5rem; }
-pre { background: #f4f4f4; padding: 1rem; white-space: pre-wrap; min-height: 3rem; }
+pre { background: #f4f4f4; padding: 1rem; white-space: pre; overflow-x: auto; min-height: 3rem; }
