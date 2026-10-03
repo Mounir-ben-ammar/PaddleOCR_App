@@ -1,0 +1,14 @@
+{
+  "name": "PaddleOCR App",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  "hostRequirements": { "cpus": 2, "memory": "8gb" },
+  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y libgl1 libglib2.0-0 && pip install -r requirements.txt",
+  "postAttachCommand": "python app.py",
+  "forwardPorts": [5000],
+  "portsAttributes": {
+    "5000": { "label": "OCR app", "onAutoForward": "openBrowser" }
+  },
+  "secrets": {
+    "OPENAI_API_KEY": { "description": "OpenAI API key used for the GPT extraction step" }
+  }
+}
