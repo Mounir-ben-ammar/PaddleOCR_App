@@ -3,43 +3,237 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>OCR + GPT</title>
+  <title>OCR to GPT</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-  <h1>OCR → GPT pipeline (v1)</h1>
+  <header class="top">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5a1 1 0 0 1 1-1h2M17 4h2a1 1 0 0 1 1 1v2M20 17v2a1 1 0 0 1-1 1h-2M7 20H5a1 1 0 0 1-1-1v-2M8 9h8M8 12h8M8 15h5"/></svg>
+      </div>
+      <div>
+        <h1>OCR to GPT</h1>
+        <p>PaddleOCR extraction, refined by GPT</p>
+      </div>
+    </div>
+  </header>
 
-  <form id="form">
-    <label>Image or PDF <input type="file" name="image" accept="image/*,application/pdf" required></label>
-    <label>Instruction for GPT
-      <textarea name="prompt" rows="3">{{ default_prompt }}</textarea>
-    </label>
-    <button type="submit">Run</button>
-    <span id="status"></span>
-  </form>
+  <div class="shell">
+    <section class="hero enter" style="--i:0">
+      <h2>From document to <span>key details</span></h2>
+      <p>Upload an image or PDF and get the sender, the amount and the date, extracted automatically.</p>
+    </section>
 
-  <h2>1. PaddleOCR output</h2>
-  <pre id="ocr"></pre>
+    <div class="layout">
+      <!-- Input -->
+      <section class="card card-pad panel-input enter" style="--i:1" aria-labelledby="in-title">
+        <h2 class="card-title" id="in-title">Document</h2>
+        <form id="form" novalidate>
+          <div class="dropzone" id="dropzone">
+            <div class="dz-icon" aria-hidden="true">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0L7 9m5-5 5 5M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+            </div>
+            <strong>Drop a file or click to browse</strong>
+            <span>Image or PDF</span>
+            <input type="file" id="file" name="image" accept="image/*,application/pdf" aria-label="Image or PDF file" aria-describedby="fileHelp">
+          </div>
+          <p class="helper" id="fileHelp" role="alert">Choose an image or PDF first.</p>
 
-  <h2>2. GPT output</h2>
-  <pre id="llm"></pre>
+          <div class="file-chip" id="chip">
+            <div class="thumb" id="thumb"></div>
+            <div class="meta">
+              <div class="name" id="fname"></div>
+              <div class="size" id="fsize"></div>
+            </div>
+            <button type="button" class="btn btn-ghost" id="clear" aria-label="Remove file">Remove</button>
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="run">
+            <span class="spinner" aria-hidden="true"></span>
+            <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+            <span id="runLabel">Extract details</span>
+          </button>
+          <p class="hint">OCR runs on CPU and can take a while for large or multi-page files.</p>
+        </form>
+      </section>
+
+      <!-- Output -->
+      <div>
+        <div class="card stepper enter" style="--i:2" aria-live="polite">
+          <div class="step" id="s1"><span class="dot">1</span><span>PaddleOCR<span class="sub" id="s1sub">Waiting for a file</span></span></div>
+          <div class="bar" id="bar"></div>
+          <div class="step" id="s2"><span class="dot">2</span><span>GPT<span class="sub" id="s2sub">Waiting for OCR</span></span></div>
+        </div>
+
+        <div class="notice" id="notice" role="alert"></div>
+
+        <div class="fields">
+          <section class="card field-card reveal" style="--i:0" aria-labelledby="f1">
+            <div class="field-top">
+              <span class="field-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+              </span>
+              <h3 id="f1">Sender</h3>
+              <button type="button" class="btn btn-ghost" data-copy="v-sender_name">Copy</button>
+            </div>
+            <div class="field-value" id="v-sender_name" data-empty="true">&mdash;</div>
+          </section>
+
+          <section class="card field-card reveal" style="--i:1" aria-labelledby="f2">
+            <div class="field-top">
+              <span class="field-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg>
+              </span>
+              <h3 id="f2">Amount</h3>
+              <button type="button" class="btn btn-ghost" data-copy="v-amount">Copy</button>
+            </div>
+            <div class="field-value" id="v-amount" data-empty="true">&mdash;</div>
+          </section>
+
+          <section class="card field-card reveal" style="--i:2" aria-labelledby="f3">
+            <div class="field-top">
+              <span class="field-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+              </span>
+              <h3 id="f3">Date</h3>
+              <button type="button" class="btn btn-ghost" data-copy="v-date">Copy</button>
+            </div>
+            <div class="field-value" id="v-date" data-empty="true">&mdash;</div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script>
-    const form = document.getElementById("form");
-    const status = document.getElementById("status");
+    const $ = (id) => document.getElementById(id);
+    const form = $("form"), fileInput = $("file"), runBtn = $("run"), dz = $("dropzone");
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const FIELDS = ["sender_name", "amount", "date"];
+    let timer = null;
+
+    // Scroll reveal for the field cards
+    const io = new IntersectionObserver((entries) => entries.forEach((e) => {
+      if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+    }), { rootMargin: "0px 0px -80px 0px" });
+    document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
+
+    const fmtSize = (b) => b > 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB";
+
+    function setFile(file) {
+      const chip = $("chip"), thumb = $("thumb");
+      thumb.replaceChildren();
+      $("fileHelp").classList.remove("show");
+      dz.classList.remove("invalid");
+      if (!file) { chip.classList.remove("show"); return; }
+      $("fname").textContent = file.name;
+      $("fsize").textContent = fmtSize(file.size);
+      if (file.type.startsWith("image/")) {
+        const img = new Image();
+        img.alt = ""; img.src = URL.createObjectURL(file);
+        thumb.replaceChildren(img);
+      } else {
+        thumb.textContent = "PDF";
+      }
+      chip.classList.remove("show"); void chip.offsetWidth; chip.classList.add("show");
+      setStep("s1", "", "Ready");
+    }
+
+    fileInput.addEventListener("change", () => setFile(fileInput.files[0]));
+    $("clear").addEventListener("click", () => { fileInput.value = ""; setFile(null); resetSteps(); });
+
+    ["dragenter", "dragover"].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.add("drag"); }));
+    ["dragleave", "drop"].forEach((ev) => dz.addEventListener(ev, () => dz.classList.remove("drag")));
+    dz.addEventListener("drop", (e) => {
+      e.preventDefault();
+      if (e.dataTransfer.files.length) { fileInput.files = e.dataTransfer.files; setFile(fileInput.files[0]); }
+    });
+
+    document.querySelectorAll("[data-copy]").forEach((b) => b.addEventListener("click", async () => {
+      const el = $(b.dataset.copy);
+      if (el.dataset.empty === "true") return;
+      try { await navigator.clipboard.writeText(el.textContent); b.textContent = "Copied ✓"; b.classList.add("ok"); }
+      catch { b.textContent = "Press Ctrl+C"; }
+      setTimeout(() => { b.textContent = "Copy"; b.classList.remove("ok"); }, 1600);
+    }));
+
+    function setStep(id, state, sub) {
+      const el = $(id);
+      el.className = "step" + (state ? " " + state : "");
+      el.querySelector(".dot").textContent = state === "done" ? "✓" : state === "error" ? "!" : id.slice(1);
+      $(id + "sub").textContent = sub;
+    }
+    function resetSteps() {
+      setStep("s1", "", "Waiting for a file"); setStep("s2", "", "Waiting for OCR");
+      $("bar").className = "bar";
+    }
+    function showError(msg) {
+      const n = $("notice"); n.classList.remove("show"); void n.offsetWidth;
+      n.textContent = msg; n.classList.add("show");
+    }
+
+    // state: "loading" | "" ; value: string | null | undefined
+    function setField(key, state, value) {
+      const el = $("v-" + key);
+      el.classList.toggle("loading", state === "loading");
+      el.classList.remove("filled");
+      const has = value !== null && value !== undefined && String(value).trim() !== "";
+      el.dataset.empty = state === "loading" ? "true" : (has ? "false" : "true");
+      el.textContent = state === "loading" ? "" : (has ? String(value) : "—");
+      if (state !== "loading" && has) { void el.offsetWidth; el.classList.add("filled"); }
+    }
+
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      status.textContent = "Processing...";
-      document.getElementById("ocr").textContent = "";
-      document.getElementById("llm").textContent = "";
+      if (!fileInput.files[0]) {
+        $("fileHelp").classList.add("show");
+        dz.classList.remove("invalid"); void dz.offsetWidth; dz.classList.add("invalid");
+        return;
+      }
+      $("notice").classList.remove("show");
+      runBtn.disabled = true; runBtn.classList.remove("success"); runBtn.classList.add("loading");
+      $("runLabel").textContent = "Processing...";
+      FIELDS.forEach((k) => setField(k, "loading"));
+      setStep("s1", "active", "Reading text... 0s"); setStep("s2", "", "Waiting for OCR");
+      $("bar").className = "bar run";
+      $("v-sender_name").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "nearest" });
+      const t0 = Date.now();
+      timer = setInterval(() => $("s1sub").textContent = "Reading text... " + Math.round((Date.now() - t0) / 1000) + "s", 1000);
+
+      let ok = false;
       try {
         const res = await fetch("/process", { method: "POST", body: new FormData(form) });
-        const data = await res.json();
-        document.getElementById("ocr").textContent = data.ocr_text || "";
-        document.getElementById("llm").textContent = data.llm_output || "";
-        status.textContent = data.error || "Done";
+        let data = {};
+        try { data = await res.json(); } catch { data = { error: "Server returned an unexpected response (HTTP " + res.status + ")." }; }
+        clearInterval(timer);
+        const secs = Math.round((Date.now() - t0) / 1000);
+        const fields = data.fields || {};
+
+        FIELDS.forEach((k) => setField(k, "", fields[k]));
+
+        if (data.fields) {
+          setStep("s1", "done", "Done"); $("bar").className = "bar done";
+          setStep("s2", "done", "Done in " + secs + "s total"); ok = true;
+        } else if (/LLM error/.test(data.error || "")) {
+          setStep("s1", "done", "Done"); $("bar").className = "bar done"; setStep("s2", "error", "Failed");
+        } else {
+          setStep("s1", "error", "No text extracted"); $("bar").className = "bar";
+        }
+        if (data.error || !res.ok) showError(data.error || "Request failed (HTTP " + res.status + ").");
       } catch (err) {
-        status.textContent = "Request failed: " + err;
+        clearInterval(timer);
+        FIELDS.forEach((k) => setField(k, "", null));
+        setStep("s1", "error", "Request failed"); $("bar").className = "bar";
+        showError("Could not reach the server: " + err.message);
+      } finally {
+        runBtn.disabled = false; runBtn.classList.remove("loading");
+        if (ok) {
+          runBtn.classList.add("success"); $("runLabel").textContent = "Done";
+          setTimeout(() => { runBtn.classList.remove("success"); $("runLabel").textContent = "Extract details"; }, 2200);
+        } else {
+          $("runLabel").textContent = "Extract details";
+        }
       }
     });
   </script>
