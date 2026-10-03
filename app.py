@@ -11,11 +11,12 @@ load_dotenv()
 
 MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")
 INSTRUCTION = (
-    "The user message is text extracted by OCR from a receipt, so it may contain OCR errors. "
+    "The user message is text extracted by OCR from a document such as a receipt, "
+    "invoice or bank notice, so it may contain OCR errors. "
     "Extract these fields and answer with a JSON object only:\n"
-    '- "sender": the name of the business or person who issued the receipt\n'
-    '- "amount": the total amount paid, including the currency (e.g. "1,250.00 TND")\n'
-    '- "date": the receipt date in YYYY-MM-DD format\n'
+    '- "sender": the name of the person or company who issued or sent the document\n'
+    '- "amount": the total amount, including the currency (e.g. "1,250.00 TND")\n'
+    '- "date": the document date in YYYY-MM-DD format\n'
     "Use null for any field you cannot find."
 )
 FIELDS = ("sender", "amount", "date")

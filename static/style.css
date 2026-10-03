@@ -149,6 +149,19 @@ button { cursor: pointer; }
 .icon-btn.small svg { width: 15px; height: 15px; }
 .icon-btn.copied { color: var(--success); border-color: color-mix(in srgb, var(--success) 50%, transparent); }
 
+.topbar-actions { display: flex; align-items: center; gap: 10px; }
+.lang { display: flex; padding: 3px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); }
+.lang-btn {
+  border: 0; background: transparent;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px; font-weight: 600;
+  color: var(--text-3);
+  transition: all 0.25s var(--ease);
+}
+.lang-btn:hover { color: var(--text); }
+.lang-btn.active { background: var(--grad); color: #fff; box-shadow: 0 4px 12px -4px rgba(79, 70, 229, 0.6); }
+
 #themeToggle .i-moon { display: none; }
 :root[data-theme="dark"] #themeToggle .i-sun { display: none; }
 :root[data-theme="dark"] #themeToggle .i-moon { display: block; }
@@ -368,6 +381,7 @@ button { cursor: pointer; }
 @keyframes sheen { to { transform: translateX(100%); } }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+.wait-hint { margin: 12px 0 0; font-size: 12.5px; text-align: center; color: var(--text-3); }
 .status { min-height: 1.4em; margin: 12px 0 0; font-size: 13px; text-align: center; color: var(--text-3); font-variant-numeric: tabular-nums; }
 .status.error { color: var(--danger); }
 .status.ok { color: var(--success); }
