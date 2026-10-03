@@ -1,3 +1,4 @@
+import json
 import os
 import tempfile
 
@@ -9,10 +10,12 @@ from paddleocr import PaddleOCR
 load_dotenv()
 
 MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")
-DEFAULT_PROMPT = (
-    "The following text was extracted from an image with OCR. "
-    "Fix OCR errors, then return a clean, well-structured version of the text "
-    "and a short summary of its content."
+PROMPT = (
+    "The following text was extracted from a document with OCR and may contain errors. "
+    "Find the name of the sender (the person or company who issued or sent the document) "
+    "and the total amount, including its currency. "
+    'Answer only with JSON: {"sender": "...", "amount": "..."}. '
+    "Use null for a value you cannot find."
 )
 
 app = Flask(__name__)
@@ -36,21 +39,23 @@ def extract_text(path: str) -> str:
     )
 
 
-def ask_llm(ocr_text: str, instruction: str) -> str:
-    """Step 2: send the OCR output to GPT."""
+def ask_llm(ocr_text: str) -> tuple[str | None, str | None]:
+    """Step 2: send the OCR output to GPT and get back the sender and amount."""
     response = client.chat.completions.create(
         model=MODEL,
+        response_format={"type": "json_object"},
         messages=[
-            {"role": "system", "content": instruction},
+            {"role": "system", "content": PROMPT},
             {"role": "user", "content": ocr_text},
         ],
     )
-    return response.choices[0].message.content
+    data = json.loads(response.choices[0].message.content)
+    return data.get("sender"), data.get("amount")
 
 
 @app.get("/")
 def index():
-    return render_template("index.html", default_prompt=DEFAULT_PROMPT)
+    return render_template("index.html")
 
 
 @app.post("/process")
@@ -58,7 +63,6 @@ def process():
     file = request.files.get("image")
     if not file or not file.filename:
         return jsonify(error="No file uploaded"), 400
-    instruction = request.form.get("prompt") or DEFAULT_PROMPT
 
     suffix = os.path.splitext(file.filename)[1] or ".png"
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
@@ -70,14 +74,14 @@ def process():
         os.remove(path)
 
     if not ocr_text.strip():
-        return jsonify(ocr_text="", llm_output="", error="No text detected in the image")
+        return jsonify(error="No text detected in the image")
 
     try:
-        llm_output = ask_llm(ocr_text, instruction)
+        sender, amount = ask_llm(ocr_text)
     except Exception as e:
-        return jsonify(ocr_text=ocr_text, llm_output="", error=f"LLM error: {e}"), 502
+        return jsonify(error=f"LLM error: {e}"), 502
 
-    return jsonify(ocr_text=ocr_text, llm_output=llm_output)
+    return jsonify(sender=sender, amount=amount)
 
 
 if __name__ == "__main__":
